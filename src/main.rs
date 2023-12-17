@@ -1,20 +1,44 @@
-use std::io::{stdin, stdout, Write};
-use crate::problems::problem01::{problem01};
+use std::env;
+use std::process::ExitCode;
+
+use crate::problems::problem01::{problem01_part_1, problem01_part_2};
 
 mod problems;
+mod file;
 
-fn main() {
-    print!("Which problem would you like to solve? ");
-    stdout().flush().unwrap();
+fn main() -> ExitCode {
+    let lower_problem_bound = 1;
+    let upper_problem_bound = 1;
 
-    let mut input = String::new();
-    stdin()
-        .read_line(&mut input)
-        .expect("Failed to read line");
+    let mut args = env::args().skip(1);
+    let problem_number = match args.next() {
+        Some(problem) => problem,
+        None => {
+            eprintln!("You must provide a valid problem number ({}-{}) as the first command line argument", lower_problem_bound, upper_problem_bound);
+            return ExitCode::from(1);
+        }
+    };
+    let input_file = match args.next() {
+        Some(file) => file,
+        None => {
+            eprintln!("You must provide a valid filepath for the problem input as the second command line argument");
+            return ExitCode::from(1);
+        }
+    };
 
-    let problem: u32 = input.trim().parse().expect("You must enter a valid integer");
-    match problem {
-        1 => problem01(),
-        _ => println!("Invalid problem entered - enter a number between 1-1"),
+    let result = match problem_number.trim() {
+        "1a" => problem01_part_1(&input_file),
+        "1b" => problem01_part_2(&input_file),
+        trimmed => {
+            eprintln!("Invalid problem entered - you entered '{}', but a number between {} and {} with either part a or b was expected", trimmed, lower_problem_bound, upper_problem_bound);
+            return ExitCode::from(1);
+        }
+    };
+    match result {
+        Ok(_) => return ExitCode::from(0),
+        Err(err) => {
+            eprintln!("Error: {}", err);
+            return ExitCode::from(1);
+        }
     }
 }

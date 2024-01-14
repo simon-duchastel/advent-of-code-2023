@@ -41,10 +41,21 @@ pub fn problem02_part_1(input_file: &str) -> Result<(), Box<dyn Error>> {
 pub fn problem02_part_2(input_file: &str) -> Result<(), Box<dyn Error>> {
     let input = read_file(input_file)?;
     let lines: Vec<&str> = input.lines().collect();
+   
+    let mut sum_of_power: u32 = 0;
+    for line in lines {
+        let line_without_id = line.split(": ").collect::<Vec<&str>>()[1];
+        match get_max_cube_values_for_game(&line_without_id) {
+            Ok((red, green, blue)) => {
+                sum_of_power += red * green * blue;
+            }
+            Err(err) => {
+                return Err(err);
+            }
+        }
+    }
 
-    // for line in lines {
-        
-    // }
+    println!("Sum of game powers: {}", sum_of_power);
 
     return Ok(());
 }
@@ -61,7 +72,7 @@ fn get_game_id(game_input: &str) -> Option<u32> {
     }
 }
 
-fn is_game_possible(game_input: &str, red_cubes: u32, green_cubes: u32, blue_cubes: u32,) -> Result<bool, Box<dyn Error>> {
+fn is_game_possible(game_input: &str, red_cubes: u32, green_cubes: u32, blue_cubes: u32) -> Result<bool, Box<dyn Error>> {
     let rounds = game_input.split("; ").collect::<Vec<&str>>();
     for round in rounds {
         match get_cubes_in_round(&round) {
@@ -77,6 +88,34 @@ fn is_game_possible(game_input: &str, red_cubes: u32, green_cubes: u32, blue_cub
         }
     }
     return Ok(true); // if we reach this point then no rounds are impossible, and thus the game is possible
+}
+
+// Get the maximum value for each of the red, green, and blue cubes for a game.
+// The maximum values for the red, green, and blue cubes are returned in that order.
+fn get_max_cube_values_for_game(game_input: &str) -> Result<(u32, u32, u32), Box<dyn Error>> {
+    let rounds = game_input.split("; ").collect::<Vec<&str>>();
+    let mut max_red = 0;
+    let mut max_green = 0;
+    let mut max_blue = 0;
+    for round in rounds {
+        match get_cubes_in_round(&round) {
+            Ok((red, green, blue)) => {
+                if red > max_red {
+                    max_red = red
+                }
+                if green > max_green {
+                    max_green = green
+                }
+                if blue > max_blue {
+                    max_blue = blue
+                }
+            }
+            Err(err) => {
+                return Err(err);
+            }
+        }
+    }
+    return Ok((max_red, max_green, max_blue));
 }
 
 // Given a string of the form "X blue, Y green, Z red" where the red, green, and blue

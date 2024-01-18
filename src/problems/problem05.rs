@@ -51,7 +51,6 @@ pub fn problem05_part_2(input_file: &str) -> Result<(), Box<dyn Error>> {
             std::io::ErrorKind::Other,
             format!("Error getting seed location - could not map seed to location")
         )))?;
-    let mut i = 0;
     for seed in &almanac.seeds {
         let next_seed_location = get_seed_location(*seed, &almanac)
             .ok_or(Box::new(std::io::Error::new(

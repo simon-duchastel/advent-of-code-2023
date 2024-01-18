@@ -3,7 +3,7 @@ use std::error::Error;
 use crate::file::{read_file};
 
 pub fn problem05_part_1(input_file: &str) -> Result<(), Box<dyn Error>> {
-    let almanac = parse_almanac(&input_file)?;
+    let almanac = parse_almanac(&input_file, false)?;
 
     if almanac.seeds.is_empty() {
         return Err(Box::new(std::io::Error::new(
@@ -36,7 +36,7 @@ pub fn problem05_part_1(input_file: &str) -> Result<(), Box<dyn Error>> {
 }
 
 pub fn problem05_part_2(input_file: &str) -> Result<(), Box<dyn Error>> {
-    let almanac = parse_almanac(&input_file)?;
+    let almanac = parse_almanac(&input_file, true)?;
 
     if almanac.seeds.is_empty() {
         return Err(Box::new(std::io::Error::new(
@@ -45,10 +45,31 @@ pub fn problem05_part_2(input_file: &str) -> Result<(), Box<dyn Error>> {
         )));
     }
 
+    let mut lowest_seed = almanac.seeds[0];
+    let mut lowest_seed_location = get_seed_location(lowest_seed, &almanac)
+        .ok_or(Box::new(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            format!("Error getting seed location - could not map seed to location")
+        )))?;
+    let mut i = 0;
+    for seed in &almanac.seeds {
+        let next_seed_location = get_seed_location(*seed, &almanac)
+            .ok_or(Box::new(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Error getting seed location - could not map seed to location")
+            )))?;
+        if next_seed_location < lowest_seed_location {
+            lowest_seed = *seed;
+            lowest_seed_location = next_seed_location;
+        }
+    }
+
+    println!("Lowest seed location is {} for seed {}", lowest_seed_location, lowest_seed);
+
     Ok(())
 }
 
-fn parse_almanac(input_file: &str) -> Result<Almanac, Box<dyn Error>> {
+fn parse_almanac(input_file: &str, seeds_as_pairs: bool) -> Result<Almanac, Box<dyn Error>> {
     let input = read_file(input_file)?;
     let lines: Vec<&str> = input.lines().collect();
 
@@ -70,8 +91,15 @@ fn parse_almanac(input_file: &str) -> Result<Almanac, Box<dyn Error>> {
         humidity_to_location: Vec::new(),
     };
     match lines[0].strip_prefix("seeds: ") {
+        Some(stripped_line) if !seeds_as_pairs => almanac.seeds = parse_integer_element_line(stripped_line)?,
         Some(stripped_line) => {
-            almanac.seeds = parse_integer_element_line(stripped_line)?;
+            let raw_seeds = parse_integer_element_line(stripped_line)?;
+            for s in 0..(raw_seeds.len()/2) {
+                let start = raw_seeds[s*2];
+                for seed in start..start+raw_seeds[s*2+1] {
+                    almanac.seeds.push(seed);
+                }
+            }
         }
         None => {
             return Err(Box::new(std::io::Error::new(

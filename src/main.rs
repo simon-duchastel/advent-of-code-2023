@@ -5,13 +5,14 @@ use crate::problems::problem01::{problem01_part_1, problem01_part_2};
 use crate::problems::problem02::{problem02_part_1, problem02_part_2};
 use crate::problems::problem03::{problem03_part_1, problem03_part_2};
 use crate::problems::problem04::{problem04_part_1, problem04_part_2};
+use crate::problems::problem05::{problem05_part_1, problem05_part_2};
 
 mod problems;
 mod file;
 
 fn main() -> ExitCode {
     let lower_problem_bound = 1;
-    let upper_problem_bound = 4;
+    let upper_problem_bound = 5;
 
     let mut args = env::args().skip(1);
     let problem_number = match args.next() {
@@ -38,6 +39,8 @@ fn main() -> ExitCode {
         "3b" => problem03_part_2(&input_file),
         "4a" => problem04_part_1(&input_file),
         "4b" => problem04_part_2(&input_file),
+        "5a" => problem05_part_1(&input_file),
+        "5b" => problem05_part_2(&input_file),
         trimmed => {
             eprintln!("Invalid problem entered - you entered '{}', but a number between {} and {} with either part a or b was expected", trimmed, lower_problem_bound, upper_problem_bound);
             return ExitCode::from(1);

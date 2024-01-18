@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::error::Error;
 
 use crate::file::{read_file};
@@ -12,14 +13,23 @@ pub fn problem05_part_1(input_file: &str) -> Result<(), Box<dyn Error>> {
         )));
     }
 
+    let mut almanac_memo = AlmanacMemo {
+        seed_to_soil: HashMap::new(),
+        soil_to_fertilizer: HashMap::new(),
+        fertilizer_to_water: HashMap::new(),
+        water_to_light: HashMap::new(),
+        light_to_temperature: HashMap::new(),
+        temperature_to_humidity: HashMap::new(),
+        humidity_to_location: HashMap::new(),
+    };
     let mut lowest_seed = almanac.seeds[0];
-    let mut lowest_seed_location = get_seed_location(lowest_seed, &almanac)
+    let mut lowest_seed_location = get_seed_location(lowest_seed, &almanac, &mut almanac_memo)
         .ok_or(Box::new(std::io::Error::new(
             std::io::ErrorKind::Other,
             format!("Error getting seed location - could not map seed to location")
         )))?;
     for seed in &almanac.seeds {
-        let next_seed_location = get_seed_location(*seed, &almanac)
+        let next_seed_location = get_seed_location(*seed, &almanac, &mut almanac_memo)
             .ok_or(Box::new(std::io::Error::new(
                 std::io::ErrorKind::Other,
                 format!("Error getting seed location - could not map seed to location")
@@ -45,14 +55,23 @@ pub fn problem05_part_2(input_file: &str) -> Result<(), Box<dyn Error>> {
         )));
     }
 
+    let mut almanac_memo = AlmanacMemo {
+        seed_to_soil: HashMap::new(),
+        soil_to_fertilizer: HashMap::new(),
+        fertilizer_to_water: HashMap::new(),
+        water_to_light: HashMap::new(),
+        light_to_temperature: HashMap::new(),
+        temperature_to_humidity: HashMap::new(),
+        humidity_to_location: HashMap::new(),
+    };
     let mut lowest_seed = almanac.seeds[0];
-    let mut lowest_seed_location = get_seed_location(lowest_seed, &almanac)
+    let mut lowest_seed_location = get_seed_location(lowest_seed, &almanac, &mut almanac_memo)
         .ok_or(Box::new(std::io::Error::new(
             std::io::ErrorKind::Other,
             format!("Error getting seed location - could not map seed to location")
         )))?;
     for seed in &almanac.seeds {
-        let next_seed_location = get_seed_location(*seed, &almanac)
+        let next_seed_location = get_seed_location(*seed, &almanac, &mut almanac_memo)
             .ok_or(Box::new(std::io::Error::new(
                 std::io::ErrorKind::Other,
                 format!("Error getting seed location - could not map seed to location")
@@ -173,30 +192,56 @@ fn parse_integer_tuple(line: &str) -> Result<(u64, u64, u64), Box<dyn Error>> {
     Ok((integer_vec[0], integer_vec[1], integer_vec[2]))
 }
 
-fn get_seed_location(seed: u64, almanac: &Almanac) -> Option<u64> {
+fn get_seed_location(seed: u64, almanac: &Almanac, memo: &mut AlmanacMemo) -> Option<u64> {
     let mut key = seed;
-    key = get_almanac_map(key, &almanac.seed_to_soil);
-    key = get_almanac_map(key, &almanac.soil_to_fertilizer);
-    key = get_almanac_map(key, &almanac.fertilizer_to_water);
-    key = get_almanac_map(key, &almanac.water_to_light);
-    key = get_almanac_map(key, &almanac.light_to_temperature);
-    key = get_almanac_map(key, &almanac.temperature_to_humidity);
-    key = get_almanac_map(key, &almanac.humidity_to_location);
+    let mut new_key;
+    
+    new_key = get_almanac_map(key, &almanac.seed_to_soil, &memo.seed_to_soil);
+    memo.seed_to_soil.insert(key, new_key);
+    key = new_key;
+
+    new_key = get_almanac_map(key, &almanac.soil_to_fertilizer, &memo.soil_to_fertilizer);
+    memo.soil_to_fertilizer.insert(key, new_key);
+    key = new_key;
+
+    new_key = get_almanac_map(key, &almanac.fertilizer_to_water, &memo.fertilizer_to_water);
+    memo.fertilizer_to_water.insert(key, new_key);
+    key = new_key;
+
+    new_key = get_almanac_map(key, &almanac.water_to_light, &memo.water_to_light);
+    memo.water_to_light.insert(key, new_key);
+    key = new_key;
+
+    new_key = get_almanac_map(key, &almanac.light_to_temperature, &memo.light_to_temperature);
+    memo.light_to_temperature.insert(key, new_key);
+    key = new_key;
+
+    new_key = get_almanac_map(key, &almanac.temperature_to_humidity, &memo.temperature_to_humidity);
+    memo.temperature_to_humidity.insert(key, new_key);
+    key = new_key;
+
+    new_key = get_almanac_map(key, &almanac.humidity_to_location, &memo.humidity_to_location);
+    memo.humidity_to_location.insert(key, new_key);
+    key = new_key;
 
     Some(key)
 }
 
-fn get_almanac_map(key: u64, map: &Vec<(u64, u64, u64)>) -> u64 {
-    for tuple in map {
-        let (value, tuple_key, range) = tuple;
-        let upper_range = tuple_key + range;
-
-        if tuple_key <= &key && key <= upper_range {
-            return value + (key - tuple_key);
+fn get_almanac_map(key: u64, map: &Vec<(u64, u64, u64)>, memo: &HashMap<u64, u64>) -> u64 {
+    match memo.get(&key) {
+        Some(value) => *value,
+        None => {
+            for tuple in map {
+                let (value, tuple_key, range) = tuple;
+                let upper_range = tuple_key + range;
+        
+                if tuple_key <= &key && key <= upper_range {
+                    return value + (key - tuple_key);
+                }
+            }
+            key
         }
     }
-
-    key
 }
 
 #[derive(Debug)]
@@ -210,4 +255,14 @@ struct Almanac {
     light_to_temperature: Vec<(u64, u64, u64)>,
     temperature_to_humidity: Vec<(u64, u64, u64)>,
     humidity_to_location: Vec<(u64, u64, u64)>,
+}
+
+struct AlmanacMemo {
+    seed_to_soil: HashMap<u64, u64>,
+    soil_to_fertilizer: HashMap<u64, u64>,
+    fertilizer_to_water: HashMap<u64, u64>,
+    water_to_light: HashMap<u64, u64>,
+    light_to_temperature: HashMap<u64, u64>,
+    temperature_to_humidity: HashMap<u64, u64>,
+    humidity_to_location: HashMap<u64, u64>,
 }
